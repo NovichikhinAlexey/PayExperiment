@@ -1,0 +1,330 @@
+﻿@using Lykke.Service.PayInvoicePortal
+@using Lykke.Service.PayInvoicePortal.Extensions
+@using Lykke.Service.PayInvoicePortal.Settings.ServiceSettings
+@inject Microsoft.ApplicationInsights.AspNetCore.JavaScriptSnippet JavaScriptSnippet
+
+@{
+    var pageTitle = ViewData["Title"].ToString();
+
+    var titlePostfix = "Lykke Pay";
+
+    switch (Startup.DeploymentEnvironment)
+    {
+        case DeploymentEnvironment.Dev:
+            titlePostfix += " Dev";
+            break;
+        case DeploymentEnvironment.Test:
+            titlePostfix += " Test";
+            break;
+        case DeploymentEnvironment.Sandbox:
+            titlePostfix += " Sandbox";
+            break;
+    }
+
+    ViewData["Title"] = !string.IsNullOrEmpty(pageTitle) ? $"{pageTitle} | {titlePostfix}" : titlePostfix;
+}
+
+<!DOCTYPE html>
+@* Support from IE11 *@
+<html class="no-js" data-ng-app="app">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <title>@ViewData["Title"]</title>
+    @if (Startup.DeploymentEnvironment != DeploymentEnvironment.Prod)
+    {
+        <meta name="robots" content="noindex" />
+    }
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    @if (ViewData["MetaDescription"] != null)
+    {
+        @*
+            https://developers.google.com/web/tools/lighthouse/audits/description
+            https://moz.com/learn/seo/meta-description
+        *@
+        <meta name="description" content="@ViewData["MetaDescription"]">
+    }
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="stylesheet" type="text/css" href="~/src/css/vendors-custom/bootstrap-custom.min.css" asp-append-version="true">
+
+    @RenderSection("StyleLibs", required: false)
+    @* https://github.com/madskristensen/BundlerMinifier/blob/master/README.md#bundleconfigjson *@
+    <environment include="Development">
+        <link rel="stylesheet" type="text/css" href="~/css/style.css" asp-append-version="true">
+    </environment>
+    <environment include="Staging,Production">
+        <link rel="stylesheet" type="text/css" href="~/css/style.min.css" asp-append-version="true">
+    </environment>
+    @Html.Raw(JavaScriptSnippet.FullScript)
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments);
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g;
+            m.parentNode.insertBefore(a, m);
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+
+        ga('create', 'UA-68151354-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+</head>
+<body class="footer_in_view" data-ng-class="{'body--menu_opened': $root.blur || $root.modalOpened}">
+    <lp-confirm-modal></lp-confirm-modal>
+    @await Html.PartialAsync("/Views/Partials/ConfirmModal.cshtml")
+    <div class="header_container">
+        <header class="header">
+            <div class="container">
+                <div class="header_wrapper">
+                    <div class="header__logo header_logo">
+                        <a href="/">
+                            <img class="header_logo__img" src="/img/lykke_exchange_spot_logo.svg" height="36" alt="lykke_logo">
+                            <div class="header_logo__title">
+                                Lykke Pay
+                                @if (Startup.DeploymentEnvironment == DeploymentEnvironment.Test)
+                                {
+                                    <span style="color:red">Test</span>
+                                }
+                                else if (Startup.DeploymentEnvironment == DeploymentEnvironment.Sandbox)
+                                {
+                                    <span style="color:red">Sandbox</span>
+                                }
+                            </div>
+                        </a>
+                    </div>
+                    <div class="header__actions header_actions pull-right">
+                        @if (ViewContext.HttpContext.User.Identity.IsAuthenticated)
+                        {
+                            <div class="header_actions__login header_login">
+                                <div class="header_user dropdown__control">
+                                    <a href="javascript:;">
+                                        <div class="header_user__img">
+                                            <img src="/img/user_default.svg" width="40" alt="user_image">
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="dropdown__container">
+                                    <ul class="dropdown__nav">
+                                        @if (!string.IsNullOrWhiteSpace(User.GetName()))
+                                        {
+                                            <li><a href="javascript:;" style="color: #000; cursor: default;">@User.GetName().ToUpper()</a></li>
+                                        }
+                                        @if (User.IsSupervisor())
+                                        {
+                                            <li><a href="@Url.Action("Index", "Supervising")">All invoices</a></li>
+                                        }
+                                        <li><a href="@Url.Action("SignOut", "Auth")">Sign Out</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="header_actions__logout visible-xs">
+                                <a href="@Url.Action("SignOut", "Auth")" class="btn btn--icon btn_logout">
+                                    <i class="icon icon--exit"></i>
+                                </a>
+                            </div>
+                        }
+                        else
+                        {
+                            if (!Url.Action("SignIn", "Auth").Equals(Context.Request.Path, StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                <div class="header_actions__login header_login">
+                                    <a href="@Url.Action("SignIn", "Auth", new {returnUrl = Context.Request.Path.Value == "/" ? string.Empty : Context.Request.Path.Value})">
+                                        <div class="header_login__title">Sign in</div>
+                                    </a>
+                                </div>
+                            }
+                            if (Startup.EnableSignup && !Url.Action("Signup", "Signup").Equals(Context.Request.Path))
+                            {
+                                <div class="header_actions__signup header_signup">
+                                    <div class="header_user">
+                                        <a href="@Url.Action("Signup", "Signup")">
+                                            <div class="header_login__title">Sign up</div>
+                                        </a>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="header_search">
+                <div class="container">
+                    <div class="header_search__inner">
+                        <div class="header_search__buttons">
+                            <button type="button" class="btn btn-sm btn--flat hidden-xs btn_close_header">Cancel</button>
+                            <button type="button" class="btn btn-sm btn--primary hidden-xs">Search</button>
+                            <button type="button" class="btn btn--icon visible-xs btn_close_header">
+                                <i class="icon icon--cancel_round"></i>
+                            </button>
+                        </div>
+                        <div class="header_search__field">
+                            <button class="header_search__btn btn btn--icon" type="button">
+                                <i class="icon icon--search"></i>
+                            </button>
+                            <input type="text" class="form-control" placeholder="Search block, address, transaction…">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+    </div>
+    @RenderBody()
+    <footer class="footer">
+        <div class="footer__top">
+            <div class="container">
+                <div class="separator"></div>
+                <div class="row">
+                    <div class="col-md-5">
+                        <div class="apps apps--left">
+                            <div class="apps_apple">
+                                <a href="https://appsto.re/ru/Dwjvcb.i"
+                                   class="app_link app_link--appstore"
+                                   title="App Store"
+                                   target="_blank"
+                                   rel="noreferrer">
+                                    <img src="/img/appstore-badge.svg" width="170" alt="apps_apple">
+                                </a>
+                            </div>
+                            <div class="apps_google">
+                                <a href="https://play.google.com/store/apps/details?id=com.lykkex.LykkeWallet"
+                                   class="app_link app_link--googleplay"
+                                   title="Google Play"
+                                   target="_blank"
+                                   rel="noreferrer">
+                                    <img src="/img/google-play.svg" width="170" alt="apps_google">
+                                </a>
+                            </div>
+                        </div>
+                        <div class="block_subscribe" data-ng-controller="subscriptionCtrl as vm">
+                            <div class="h5 block_subscribe__title">Newsletter</div>
+                            <p class="hint">Get our latest news right in your mailbox</p>
+                            <form class="form" id="subscribe_form">
+                                <div class="form-group">
+                                    <div class="input-group">
+                                        <i class="icon icon--email"></i>
+                                        <input type="email" placeholder="E-mail address" required id="subscribe-email" class="form-control" data-ng-model="vm.model.email">
+                                    </div>
+                                    <div data-ng-if="vm.model.error" class="hint" style="color: #a94442;" data-ng-bind="vm.model.error"></div>
+                                    <div data-ng-if="vm.model.sent" class="hint" style="color: #3c763d;">Thank you for signing up for the newsletter</div>
+                                    <button class="btn btn-sm btn--primary btn--circle" type="submit" id="subscribe-button" data-ng-click="vm.handlers.subscribe()" data-ng-disabled="vm.model.blocked">
+                                        <i class="icon icon--arrow-right-alt"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-md-7">
+                        <div class="footer_nav">
+                            <div class="footer_nav__row">
+                                <div class="footer_nav__col">
+                                    <menu class="nav nav--list">
+                                        <li class="nav__title">Services</li>
+                                        <li><a href="https://wallet.lykke.com/">Lykke Wallet</a></li>
+                                        <li><a href="https://blockchainexplorer.lykke.com/">Blockchain Explorer</a></li>
+                                        <li><a href="https://streams.lykke.com/">Lykke Streams</a></li>
+                                        <li><a href="https://taxreports.lykke.com/">Tax Reports</a></li>
+                                        <li><a href="https://lykke.com/ico-platform">ICO Platform</a></li>
+                                        <li><a href="https://lykke.com/b2b">Accelerator</a></li>
+
+                                    </menu>
+                                </div>
+                                <div class="footer_nav__col">
+                                    <menu class="nav nav--list">
+                                        <li class="nav__title">For clients</li>
+                                        <li><a href="https://lykke.com/city/invest">Invest</a></li>
+                                        <li><a href="https://lykke.com/">Wallet</a></li>
+                                        <li><a href="https://lykke.com/exchange">Exchange</a></li>
+                                        <li><a href="https://lykke.com/b2b">Accelerator</a></li>
+                                        <li><a href="https://lykke.com/city/faq">FAQ</a></li>
+                                        <li><a href="https://lykke.com/cp/terms-and-regulation">Terms</a></li>
+
+                                    </menu>
+                                </div>
+                                <div class="footer_nav__col">
+                                    <menu class="nav nav--list">
+                                        <li class="nav__title">About us</li>
+                                        <li><a href="https://lykke.com/leadership">Core team</a></li>
+                                        <li><a href="https://lykke.com/company/news">News</a></li>
+                                        <li><a href="https://lykke.com/city/blog">Blog</a></li>
+                                        <li><a href="https://lykke.com/media/Whitepaper_LykkeExchange.pdf">White Paper</a></li>
+                                    </menu>
+                                </div>
+                                <div class="footer_nav__col">
+                                    <menu class="nav nav--list">
+                                        <li class="nav__title">Get in touch</li>
+                                        <li><a href="https://lykke.com/contacts">Contacts</a></li>
+                                        <li><a href="https://lykkex.zendesk.com">Support</a></li>
+                                        <li><a href="https://lykke.com/city/open_positions">Open positions</a></li>
+                                        <li><a href="https://lykke.com/b2b-join">Join as Blockchain Accelerator</a></li>
+                                    </menu>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer__bottom">
+            <div class="container">
+                <div class="row">
+                    <div class="col-xs-12 col-sm-7 pull-right">
+                        <ul class="social social--footer_alt">
+                            <li><a href="https://www.facebook.com/LykkeCity" target="_blank" rel="noreferrer" class="social__item"><i class="icon icon--fb_simple"></i></a></li>
+                            <li><a href="https://twitter.com/lykke" target="_blank" rel="noreferrer" class="social__item"><i class="icon icon--tw"></i></a></li>
+                            <li><a href="http://instagram.com/lykkecity" target="_blank" rel="noreferrer" class="social__item"><i class="icon icon--instagram"></i></a></li>
+                            <li><a href="https://www.youtube.com/c/LykkeX" target="_blank" rel="noreferrer" class="social__item"><i class="icon icon--youtube"></i></a></li>
+                            <li><a href="https://www.linkedin.com/company/lykke" target="_blank" rel="noreferrer" class="social__item"><i class="icon icon--linkedin-icn"></i></a></li>
+                            <li><a href="https://www.reddit.com/r/lykke/" target="_blank" rel="noreferrer" class="social__item"><i class="icon icon--reddit"></i></a></li>
+                            <li><a href="https://t.co/TmjMYnQD7T" target="_blank" rel="noreferrer" class="social__item"><i class="icon icon--telegram"></i></a></li>
+                            <li><a href="https://t.me/LykkeDev" target="_blank" rel="noreferrer" class="social__item" rel="noopener noreferrer"><i class="icon icon--telegram_dev"></i></a></li>
+                            <li><a href="https://lykke.com/cp/rss" target="_blank" rel="noreferrer" class="social__item" rel="noopener noreferrer"><i class="icon icon--rss_feed"></i></a></li>
+                        </ul>
+                    </div>
+                    <div class="col-xs-12 col-sm-5">
+                        <ul class="footer_links">
+                            <li><span class="copy">© @DateTime.Now.Year Lykke, Inc.</span></li>
+                            <li class="middot">·</li>
+                            <li><a href="https://lykke.com/privacy_policy" target="_blank" rel="noreferrer">Privacy Policy</a></li>
+                            <li class="middot">·</li>
+                            <li><a href="https://lykke.com/terms_of_use" target="_blank" rel="noreferrer">Terms of Use</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <environment include="Development">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.js"></script>
+        @RenderSection("ScriptLibs", required: false)
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/eonasdan-bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.3/js/bootstrap-select.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.11/angular.js"></script>
+        <script type="text/javascript" src="~/js/vendors.js" asp-append-version="true"></script>
+        <script type="text/javascript" src="/js/functions.js" asp-append-version="true"></script>
+        <script type="text/javascript" src="~/js/app.js" asp-append-version="true"></script>
+    </environment>
+    <environment include="Staging,Production">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        @RenderSection("ScriptLibs", required: false)
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/eonasdan-bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.3/js/bootstrap-select.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.11/angular.min.js"></script>
+        <script type="text/javascript" src="~/js/vendors.min.js" asp-append-version="true"></script>
+        <script type="text/javascript" src="/js/functions.min.js" asp-append-version="true"></script>
+        <script type="text/javascript" src="~/js/app.min.js" asp-append-version="true"></script>
+    </environment>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

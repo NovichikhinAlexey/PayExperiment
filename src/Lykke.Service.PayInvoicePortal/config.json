@@ -1,0 +1,26 @@
+{
+  "PayInvoicePortal": {
+    "BlockchainExplorerUrl": "",
+    "EthereumBlockchainExplorerUrl": "",
+
+    "DeploymentEnvironment": "SANDBOX",
+    "ApiaryDocsDomain": "",
+    "UserLoginTime": "01:00:00",
+    "CacheExpirationPeriods": {
+      "Rate": "00:01:00",
+      "MerchantName": "00:01:00" 
+    },
+    "EnableSignup": false 
+  },
+
+  "AssetsMap": 
+  {
+    "Values": {
+
+    },
+
+    "InvoiceCreationPairs": {
+
+    }
+  } 
+}

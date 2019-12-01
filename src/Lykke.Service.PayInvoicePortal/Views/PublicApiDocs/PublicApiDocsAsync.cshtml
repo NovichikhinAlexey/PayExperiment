@@ -1,0 +1,135 @@
+﻿@using Common
+@{
+    ViewData["Title"] = "PayAPI documentation";
+    ViewData["MetaDescription"] = "Lykke Pay API is a set of API methods allowing to build a custom payment solution for accepting payments in BTC, " +
+                                  "ETH and other crypto assets with the full control of the checkout process";
+}
+
+@if (User.Identity.IsAuthenticated)
+{
+    @await Html.PartialAsync("Partials/InvoicesNav")
+}
+
+<article class="content">
+
+    <div class="lykkepay-api-docs__header">
+        <div class="loader-absolute-wrapper">
+            <div>
+                <div class="spinner">
+                    <div class="spinner__inside"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="lykkepay-api-docs__embed"></div>
+    
+    <lp-sign-request></lp-sign-request>
+</article>
+
+@section Scripts {
+    <script>
+        var signRequestInitialInfo = {
+            merchantId: '@ViewBag.MerchantId',
+            apiKey: '@ViewBag.ApiKey'
+        };
+    </script>
+
+    @await Html.PartialAsync("Partials/ng2scripts")
+    <script src="https://api.apiary.io/seeds/embed.js"></script>
+    <script>
+        // disable calculations for footer
+        window.isFooterHidden = true;
+
+        $(document).ready(function () {
+            // hide footer
+            $('body').css({
+                paddingBottom: 0
+            });
+            $('.footer').hide();
+
+            // update embed height
+            var docsWrapper = $('.lykkepay-api-docs__embed');
+            var updateEmbedHeight = function () {
+                var correlationForHeaderHeight = 2;
+                docsWrapper.height(window.innerHeight - docsWrapper[0].offsetTop - correlationForHeaderHeight);
+            };
+            updateEmbedHeight();
+
+            var lazyUpdateEmbedHeight = _.debounce(updateEmbedHeight, 300);
+            $(window).on('resize', lazyUpdateEmbedHeight);
+
+            // load documentation
+            var embed = new Apiary.Embed({
+                subdomain: '@ViewBag.ApiaryDocsDomain',
+                preferences: {
+                    console: true, // Allow console, set to `false` to disable
+                    collapseMachineColumnByDefault: false, // Collapse the machine column by default
+                    displayUriParametersInHumanColumn: false, // Display URI parameters
+                    displayHttpMethods: true, // Display names of HTTP methods
+                    permalinks: true, // Allow linking into the embedded API Project
+                },
+                // https://help.apiary.io/tools/embed/#elements
+                theme: {
+                    tableOfContents: {
+                        section: {
+                            title: {
+                                text: {
+                                    color: '#0388ef'
+                                }
+                            }
+                        }
+                    },
+                    humanColumn: {
+                        content: {
+                            apiName: {
+                                borderBottom: '0px'
+                            },
+                            section: {
+                                title: {
+                                    text: {
+                                        color: '#0388ef'
+                                    }
+                                },
+                                resourceGroups: {
+                                    resourceGroup: {
+                                        name: {
+                                            borderBottom: '0px'
+                                        },
+                                        resources: {
+                                            resource: {
+                                                actions: {
+                                                    action: {
+                                                        description: {
+                                                            table: {
+                                                                tr: {
+                                                                    th: {
+                                                                        color: '#0388ef'
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                        }
+                    }
+                },
+                hosts: [
+                    'production'
+                ],
+                element: '.lykkepay-api-docs__embed'
+            });
+
+            embed.onReady(function (iframeElement, event) {
+                // manage your loading indicator here
+                $('.loader-absolute-wrapper').hide();
+            });
+        });
+    </script>
+}

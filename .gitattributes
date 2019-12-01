@@ -1,0 +1,34 @@
+# Auto normalize line-endings
+
+* text eol=lf encoding=UTF-8
+
+# Always LF line-endings
+
+*.sh text eol=lf
+
+# Always CRLF line-endings
+
+*.sln text eol=crlf
+*.csproj text eol=crlf
+
+# Diff settings
+
+*.cs     diff=csharp text 
+*.vb     text
+
+# Images & Media
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.mov     binary
+*.ico     binary
+*.pdf     binary
+*.svg     binary
+
+# Fonts
+*.ttf       binary
+*.eot       binary
+*.woff      binary
+*.woff2     binary

@@ -1,0 +1,20 @@
+﻿@using Lykke.Service.PayInvoicePortal.Models.Invoices
+
+@{
+    ViewData["Title"] = "Payments";
+}
+
+@if (User.Identity.IsAuthenticated)
+{
+    @await Html.PartialAsync("Partials/InvoicesNav")
+}
+
+<article class="content">
+    <section class="section section--padding">
+        <lp-payments></lp-payments>
+    </section>
+</article>
+
+@section Scripts {
+    @await Html.PartialAsync("Partials/ng2scripts")
+}

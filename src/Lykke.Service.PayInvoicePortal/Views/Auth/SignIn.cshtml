@@ -1,0 +1,107 @@
+﻿@using Lykke.Service.PayInvoicePortal.Models.Auth
+@model SignInViewModel
+@{
+    ViewData["Title"] = "Sign in";
+}
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@*<article class="content">
+    <section class="section section--lead">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-10 automargin">
+                    <div class="row">
+                        <div class="col-md-5">
+                            <div class="section_header">
+                                <h1 class="section__title">LykkePay</h1>
+                                <p>Invoice your customers over the world in Crypto<br /> and FIAT currencies and receive payments in<br /> asset of choice.</p>
+                            </div>
+                            @using (Html.BeginForm(null, null, new { Model.ReturnUrl }, FormMethod.Post, true, new { @class = "form form_register" }))
+                            {
+                                <h4>Sign in</h4>
+
+                                <div class="form-group">
+                                    <div class="input-group">
+                                        <i class="icon icon--email input-group-addon"></i>
+                                        <input type="email" asp-for="Login" placeholder="E-mail address" class="form-control" pattern="[A-z0-9._%+-]+@@[A-z0-9.-]+\.[a-z]{2,3}$" title="Wrong email format">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="input-group @(!ViewData.ModelState.IsValid ? "input-group--error" : "")">
+                                        <i class="icon icon--lock input-group-addon left"></i>
+                                        <input type="password" asp-for="Password" placeholder="Password" class="form-control">
+                                        <!-- TODO toggle icon classes and input type, show icon if input has value-->
+                                        <i class="icon icon--show_password input-group-addon"></i>
+                                        <!--<i class="icon icon--hide_password input-group-addon"></i>-->
+                                    </div>
+                                    @if (!ViewData.ModelState.IsValid)
+                                    {
+                                        <div class="hint hint--error">The username or password you entered is incorrect</div>
+                                    }
+                                </div>
+                                <div class="submit-group">
+                                    <button class="btn btn--primary btn-block" type="submit">Sign in</button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</article>*@
+<article class="content">
+    <section class="section section--lead">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 automargin">
+                @using (Html.BeginForm(null, null, new {Model.ReturnUrl}, FormMethod.Post, true, new {@class = "form form_register"}))
+                {
+                    <div class="form_title">
+                        <h2>Welcome back</h2>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email" class="control-label">Email address</label>
+                        <div class="input-group">
+                            <input type="email" asp-for="Login" id="email" class="form-control" pattern="[A-z0-9._%+-]+@@[A-z0-9.-]+\.[a-z]{2,}$" title="[text@text.domain]">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="password" class="control-label">Password</label>
+                        <div class="input-group">
+                            <input type="password" asp-for="Password" id="password" class="form-control">
+                        </div>
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div class="hint hint--error">The username or password you entered is incorrect</div>
+                        }
+                    </div>
+                    <div class="spinner lp-signin-loader" 
+                         style="display: none">
+                        <div class="spinner__inside"></div>
+                    </div>
+                    <div class="submit-group">
+                        <button class="btn btn--primary lp-signin-btn" 
+                                type="submit">
+                            Sign In
+                        </button>
+                    </div>
+                }
+                </div>
+            </div>
+        </div>
+    </section>
+
+</article>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('.form_register').submit(function() {
+                $(this).find('.lp-signin-btn').prop('disabled', true);
+
+                $('.lp-signin-loader').show();
+            });
+        });
+    </script>
+}
